@@ -1,6 +1,6 @@
 # Projector
 
-Share your screen with workshop attendees via their web browsers. No app installs needed — attendees just scan a QR code or visit a URL.
+Share your screen with multiple viewers via their web browsers. No app installs needed — attendees just scan a QR code or visit a URL.
 
 ## Prerequisites
 
