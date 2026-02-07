@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projector</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .container {
+    text-align: center;
+    max-width: 520px;
+    width: 100%;
+    padding: 2rem;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #fff;
+  }
+
+  .subtitle {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+  }
+
+  .status-bar {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+  }
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #555;
+  }
+
+  .dot.green { background: #22c55e; }
+  .dot.yellow { background: #eab308; }
+
+  /* Source picker */
+  .source-picker {
+    margin-bottom: 1.5rem;
+  }
+
+  .source-picker.hidden { display: none; }
+
+  .source-picker label {
+    display: block;
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 0.5rem;
+  }
+
+  .source-picker select {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+    font-family: inherit;
+    width: 100%;
+    max-width: 360px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+  }
+
+  .source-picker select:focus { border-color: #555; }
+
+  .refresh-btn {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #888;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .refresh-btn:hover { border-color: #555; color: #e0e0e0; }
+
+  /* Buttons */
+  button.main-btn {
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 0.75rem 2.5rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #fff;
+    color: #0a0a0a;
+  }
+
+  button.main-btn:hover { background: #ddd; }
+
+  button.main-btn.running {
+    background: #ef4444;
+    color: #fff;
+  }
+
+  button.main-btn.running:hover { background: #dc2626; }
+
+  button.main-btn:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+  }
+
+  /* Share panel */
+  .share-panel {
+    display: none;
+    margin-top: 2rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .share-panel.visible { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .qr-container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1rem;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+  }
+
+  .qr-container img { display: block; }
+
+  .url-box {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .url-box code {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.85rem;
+    color: #60a5fa;
+    word-break: break-all;
+    text-align: left;
+  }
+
+  .copy-btn {
+    background: #333;
+    color: #e0e0e0;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .copy-btn:hover { background: #444; }
+
+  .hint {
+    color: #888;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  .error-msg {
+    background: #1c0a0a;
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  .error-msg.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Projector</h1>
+  <p class="subtitle">Share your screen easily</p>
+
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="dot" id="streamDot"></div>
+      <span id="streamStatus">Stopped</span>
+    </div>
+  </div>
+
+  <div class="source-picker" id="sourcePicker">
+    <label>Share source</label>
+    <select id="sourceSelect">
+      <option value="" disabled selected>Loading sources...</option>
+    </select>
+    <button class="refresh-btn" onclick="loadSources()" title="Refresh source list">Refresh</button>
+  </div>
+
+  <button class="main-btn" id="startBtn" disabled>Start Sharing</button>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="share-panel" id="sharePanel">
+    <div class="qr-container" id="qrContainer"></div>
+
+    <div class="url-box">
+      <code id="urlDisplay"></code>
+      <button class="copy-btn" onclick="copyUrl()">Copy</button>
+    </div>
+
+    <p class="hint">Scan QR code or visit the URL above to view</p>
+  </div>
+</div>
+
+<script>
+  const startBtn = document.getElementById("startBtn");
+  const sharePanel = document.getElementById("sharePanel");
+  const qrContainer = document.getElementById("qrContainer");
+  const urlDisplay = document.getElementById("urlDisplay");
+  const errorMsg = document.getElementById("errorMsg");
+  const streamDot = document.getElementById("streamDot");
+  const streamStatus = document.getElementById("streamStatus");
+  const sourcePicker = document.getElementById("sourcePicker");
+  const sourceSelect = document.getElementById("sourceSelect");
+
+  let isRunning = false;
+  let viewerUrl = "";
+
+  async function loadSources() {
+    try {
+      const res = await fetch("/api/sources");
+      const data = await res.json();
+      sourceSelect.innerHTML = "";
+
+      data.screens.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = s.name;
+        sourceSelect.appendChild(opt);
+      });
+
+      startBtn.disabled = false;
+    } catch (e) {
+      sourceSelect.innerHTML = '<option disabled>Failed to load sources</option>';
+    }
+  }
+
+  async function checkStatus() {
+    try {
+      const res = await fetch("/api/status");
+      const data = await res.json();
+
+      isRunning = data.running;
+      if (isRunning) {
+        streamDot.className = "dot green";
+        streamStatus.textContent = "Streaming";
+        startBtn.textContent = "Stop Sharing";
+        startBtn.className = "main-btn running";
+        startBtn.disabled = false;
+        sourcePicker.classList.add("hidden");
+        if (data.viewer_url) showShare(data.viewer_url);
+      } else {
+        streamDot.className = "dot yellow";
+        streamStatus.textContent = "Stopped";
+        startBtn.textContent = "Start Sharing";
+        startBtn.className = "main-btn";
+        sourcePicker.classList.remove("hidden");
+        sharePanel.classList.remove("visible");
+      }
+    } catch (e) {}
+  }
+
+  function showShare(url) {
+    viewerUrl = url;
+    urlDisplay.textContent = url;
+
+    qrContainer.innerHTML = "";
+    const qr = qrcode(0, "M");
+    qr.addData(url);
+    qr.make();
+    qrContainer.innerHTML = qr.createImgTag(5, 0);
+
+    sharePanel.classList.add("visible");
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add("visible");
+    setTimeout(() => errorMsg.classList.remove("visible"), 5000);
+  }
+
+  startBtn.addEventListener("click", async () => {
+    startBtn.disabled = true;
+
+    if (isRunning) {
+      await fetch("/api/stop", { method: "POST" });
+      await checkStatus();
+      await loadSources();
+    } else {
+      if (!sourceSelect.value) {
+        showError("Select a source first");
+        startBtn.disabled = false;
+        return;
+      }
+
+      const res = await fetch("/api/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: sourceSelect.value }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        await checkStatus();
+      } else {
+        showError(data.message);
+        startBtn.disabled = false;
+      }
+    }
+  });
+
+  function copyUrl() {
+    navigator.clipboard.writeText(viewerUrl).then(() => {
+      const btn = document.querySelector(".copy-btn");
+      btn.textContent = "Copied!";
+      setTimeout(() => btn.textContent = "Copy", 1500);
+    });
+  }
+
+  // Init
+  loadSources();
+  checkStatus();
+  setInterval(checkStatus, 3000);
+</script>
+</body>
+</html>
